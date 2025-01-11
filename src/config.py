@@ -59,7 +59,7 @@ def create_default_config(config_file="config.ini"):
     config.set('general', 'border_color', '255,255,255')
     config.set('general', 'border_size', '20')
     config.set('general', 'output_size', '1080,1080')
-    config.set('general', 'min_border', '8')
+    config.set('general', 'min_border', '0')
 
     # Записываем файл
     with open(config_file, 'w') as configfile:

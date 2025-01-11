@@ -64,7 +64,7 @@ def main():
         if args.min_border:
             min_border = args.min_border
         else:
-            min_border = config_settings.get('min_border', 8)
+            min_border = config_settings.get('min_border', 0)
 
     # Логика для проверки
     if border_size and output_size:

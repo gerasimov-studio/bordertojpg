@@ -1,21 +1,49 @@
 import configparser
 import os
+import platform
+from main import APP_NAME
 
 
-def load_config(config_file="config.ini"):
+def get_config_path(app_name=APP_NAME, file_name="config.ini") -> str:
+    """
+    Возвращает путь для хранения конфигурационного файла в зависимости от ОС.
+
+    :param app_name: Имя приложения.
+    :param file_name: Имя файла конфигурации.
+    :return: Полный путь к файлу конфигурации.
+    """
+    system = platform.system()
+
+    if system == "Darwin":  # macOS
+        base_dir = os.path.join(os.path.expanduser("~"), "Library", "Application Support", app_name)
+    elif system == "Windows":  # Windows
+        base_dir = os.path.join(os.getenv("APPDATA"), app_name)
+    else:  # Linux и другие Unix-подобные системы
+        base_dir = os.path.join(os.path.expanduser("~"), f".{app_name.lower()}")
+
+    os.makedirs(base_dir, exist_ok=True)  # Создаём директорию, если её нет
+    return os.path.join(base_dir, file_name)
+
+
+def load_config(app_name=APP_NAME, config_file=None):
     """
     Загружает параметры из конфигурационного файла.
 
-    :param config_file: Путь к конфигурационному файлу.
+    :param app_name: Имя приложения.
+    :param config_file: Путь к конфигурационному файлу. Если не указан, используется стандартный путь.
     :return: Возвращает словарь с параметрами.
     """
+    if config_file is None:
+        config_file = get_config_path(app_name)
+
     settings = {}
 
     # Проверяем, существует ли конфигурационный файл
     if not os.path.exists(config_file):
         print(
-            f"Предупреждение: файл конфигурации '{config_file}' не найден. Будет создан новый файл с параметрами по умолчанию.")
-        create_default_config(config_file)
+            f"Предупреждение: файл конфигурации '{config_file}' не найден. Будет создан новый файл с параметрами по умолчанию."
+        )
+        create_default_config(app_name, config_file)
         return settings
 
     config = configparser.ConfigParser()
@@ -23,7 +51,7 @@ def load_config(config_file="config.ini"):
 
     settings['border_color'] = tuple(map(int, config.get('general', 'border_color', fallback="255,255,255").split(',')))
 
-    # Чтение border_size с учетом возможных разных форматов
+    # Чтение border_size с учётом возможных разных форматов
     border_size = config.get('general', 'border_size', fallback="20")
     try:
         border_size = eval(border_size)
@@ -40,16 +68,22 @@ def load_config(config_file="config.ini"):
         settings['output_size'] = None
 
     settings['min_border'] = config.getint('general', 'min_border', fallback=8)
-    settings['overwrite'] = config.getboolean('general', 'ovwerwrite', fallback=False)
+    settings['overwrite'] = config.getboolean('general', 'overwrite', fallback=False)
     settings['priority_mode'] = config.get('general', 'priority_mode', fallback='output_size')
 
     return settings
 
 
-def create_default_config(config_file="config.ini"):
+def create_default_config(app_name=APP_NAME, config_file=None):
     """
     Создаёт конфигурационный файл с параметрами по умолчанию.
+
+    :param app_name: Имя приложения.
+    :param config_file: Путь к конфигурационному файлу. Если не указан, используется стандартный путь.
     """
+    if config_file is None:
+        config_file = get_config_path(app_name)
+
     config = configparser.ConfigParser()
 
     # Добавляем секцию 'general' с дефолтными значениями

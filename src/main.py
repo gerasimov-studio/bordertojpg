@@ -3,6 +3,7 @@ import config
 import os
 from add_border import add_border
 
+APP_NAME = "EasyFrame"
 
 def main():
     parser = argparse.ArgumentParser(description="Добавить рамку к изображению.")

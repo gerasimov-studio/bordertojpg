@@ -1,111 +1,83 @@
 import argparse
-import config
 import os
-from add_border import add_border
+from settings_manager import SettingsManager
+from image_processor import process_image
 
-APP_NAME = "EasyFrame"
+
+def parse_arguments():
+    parser = argparse.ArgumentParser(description="Image processing application.")
+    subparsers = parser.add_subparsers(dest="command", help="Available commands")
+
+    # Process command
+    process_parser = subparsers.add_parser("process", help="Process an image.")
+    process_parser.add_argument("input", help="Path to the input image.")
+    process_parser.add_argument("--profile", help="Processing profile to use.")
+    process_parser.add_argument("--output", help="Path to save the processed image.")
+
+    # Settings command
+    settings_parser = subparsers.add_parser("settings", help="Manage settings and profiles.")
+    settings_parser.add_argument("action", choices=["list-profiles", "set-profile", "create-profile", "delete-profile"])
+    settings_parser.add_argument("--name", help="Profile name for create, set, or delete.")
+
+    return parser.parse_args()
+
+
+def process_command(args, settings_manager):
+    input_path = args.input
+    output_path = args.output
+    profile_name = args.profile or settings_manager.user_settings.get("active_profile")
+
+    if not os.path.exists(input_path):
+        print(f"Error: Input file '{input_path}' does not exist.")
+        return
+
+    profile_settings = settings_manager.load_profile(profile_name)
+    if not profile_settings:
+        print(f"Error: Profile '{profile_name}' not found.")
+        return
+
+    output_path = output_path or f"{os.path.splitext(input_path)[0]}_processed.jpg"
+    process_image(input_path, output_path, **profile_settings)
+    print(f"Image processed and saved to '{output_path}' using profile '{profile_name}'.")
+
+
+def settings_command(args, settings_manager):
+    if args.action == "list-profiles":
+        profiles = settings_manager.list_profiles()
+        print("Available profiles:")
+        for profile in profiles:
+            print(f" - {profile}")
+
+    elif args.action == "set-profile":
+        settings_manager.set_active_profile(args.name)
+        print(f"Active profile set to '{args.name}'.")
+
+    elif args.action == "create-profile":
+        settings_manager.create_profile(args.name)
+        print(f"Profile '{args.name}' created.")
+
+    elif args.action == "delete-profile":
+        try:
+            settings_manager.delete_profile(args.name)
+            print(f"Profile '{args.name}' deleted.")
+        except ValueError as e:
+            print(e)
+
 
 def main():
-    parser = argparse.ArgumentParser(description="Добавить рамку к изображению.")
+    """
+    Main function to handle CLI arguments and dispatch commands.
+    """
+    args = parse_arguments()
+    settings_manager = SettingsManager()
 
-    # Опциональные параметры
-    parser.add_argument("input", nargs="?", help="Путь к исходному изображению.")
-    parser.add_argument("--output", nargs="?", help="Путь для сохранения результата.")
-    parser.add_argument("--config", default="config.ini", help="Путь к конфигурационному файлу.")
-    parser.add_argument("--border_size", type=str, help="Размер рамки.")
-    parser.add_argument("--output_size", type=str, help="Итоговый размер изображения (в формате width,height).")
-    parser.add_argument("--min_border", type=int, help="Минимальный размер рамки для режима итогового размера")
-    parser.add_argument("--border_color", type=str, help="Цвет рамки (в формате R,G,B).")
-
-    # Перехват аргументов и обработка ошибок
-    args = parser.parse_args()
-
-    # Загружаем настройки из конфигурационного файла
-    config_settings = config.load_config(args.config)
-    overwrite = bool(config_settings.get('overwrite'))
-
-    # Проверяем корректность аргументов
-    if not args.input:
-        print("Ошибка: необходимо указать входной файл.")
-        parser.print_help()
-        return
-    elif not os.path.exists(args.input):
-        print("Ошибка: указанный файл не существует.")
-        parser.print_help()
-        return
-
-    if not overwrite and not args.output:
-        print("Ошибка: необходимо указать выходной файл, если перезапись отключена.")
-        parser.print_help()
-        return
-
-    # Устанавливаем файлы ввода и вывода
-    input_file = args.input
-    output_file = args.input if overwrite else args.output
-
-
-    # Применяем параметры из командной строки, если они заданы
-    if args.border_color:
-        border_color = tuple(map(int, args.border_color.split(',')))
+    if args.command == "process":
+        process_command(args, settings_manager)
+    elif args.command == "settings":
+        settings_command(args, settings_manager)
     else:
-        border_color = config_settings.get('border_color', (255, 255, 255))
-
-    border_size = None
-    output_size = None
-    min_border = 0
-
-    if args.border_size:
-        try:
-            border_size = eval(args.border_size)  # Преобразуем строку в кортеж или число
-        except Exception:
-            border_size = 20
-
-    if args.output_size:
-        output_size = tuple(map(int, args.output_size.split(',')))
-        if args.min_border:
-            min_border = args.min_border
-        else:
-            min_border = config_settings.get('min_border', 0)
-
-    # Логика для проверки
-    if border_size and output_size:
-        if config_settings.get('priority_mode') == 'output_size':
-            border_size = None
-        elif config_settings.get('priority_mode') == 'border_size':
-            output_size = None
-        else:
-            print("Ошибка: в конфигурации не указвн приоритет, при этом заданы взаимоисключающие параметры.")
-            parser.print_help()
-            return
-
-    # Если ни один из параметров не задан, берем из конфига
-    if not border_size and not output_size:
-        if config_settings.get('priority_mode') == 'output_size':
-            border_size = None
-            output_size = config_settings.get('output_size', '1080,1080')
-        elif config_settings.get('priority_mode') == 'border_size':
-            border_size = config_settings.get('border_size', 20)
-            output_size = None
-        else:
-            print("Ошибка: неверный параметр priority_mode в конфигурации.")
-            print(config_settings.get('priority_mode'))
-            parser.print_help()
-            return
-
-
-    # Вызываем функцию добавления рамки
-    add_border(
-        input_file,
-        output_file,
-        border_color=border_color,
-        border_size=border_size,
-        output_size=output_size,
-        min_border=min_border
-    )
+        print("Error: No command specified. Use '--help' for available commands.")
 
 
 if __name__ == "__main__":
-    try:
-        main()
-    except SystemExit:
-        pass
+    main()

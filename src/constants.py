@@ -10,6 +10,8 @@ DEFAULT_MODE = "border_size"  # Can be "border_size" or "output_size"
 DEFAULT_BORDER_SIZE = "5%"
 DEFAULT_OUTPUT_SIZE = (1080, 1080)
 DEFAULT_MIN_BORDER = 0
+DEFAULT_OUTPUT_PATTERN = "{filename}_processed.{ext}"
+DEFAULT_ALLOW_OVERWRITE = False
 
 # File paths for settings
 USER_CONFIG_FILENAME = "user_settings.json"

@@ -45,6 +45,8 @@ class SettingsManager:
             "border_size": constants.DEFAULT_BORDER_SIZE,
             "output_size": constants.DEFAULT_OUTPUT_SIZE,
             "min_border": constants.DEFAULT_MIN_BORDER,
+            "output_pattern": constants.DEFAULT_OUTPUT_PATTERN,
+            "allow_overwrite": constants.DEFAULT_ALLOW_OVERWRITE,
         }
         self._save_json(profile_path, data)
 
@@ -87,6 +89,8 @@ class SettingsManager:
                 "border_size": constants.DEFAULT_BORDER_SIZE,
                 "output_size": constants.DEFAULT_OUTPUT_SIZE,
                 "min_border": constants.DEFAULT_MIN_BORDER,
+                "overwrite": constants.DEFAULT_ALLOW_OVERWRITE,
+                "output_pattern": constants.DEFAULT_OUTPUT_PATTERN,
             })
 
     @staticmethod

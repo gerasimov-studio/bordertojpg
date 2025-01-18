@@ -1,16 +1,20 @@
 from PIL import Image, ImageOps
 import constants
+from utils import generate_output_path
 
 
-def process_image(input_path, output_path, mode="border_size", **kwargs):
+def process_image(input_path, **profile_settings):
     """
     Adds a border to an image. Supports different modes.
 
     :param input_path: Path to the source image.
-    :param output_path: Path to save the resulting image.
-    :param mode: Mode for adding a border ("output_size", "border_size").
-    :param kwargs: Additional parameters for the selected mode.
+    :param profile_settings: Current profile parameters.
     """
+    # Extract parameters from the profile
+    mode = profile_settings.get("mode", constants.DEFAULT_MODE)
+    overwrite = profile_settings.get("overwrite", constants.DEFAULT_ALLOW_OVERWRITE)
+    output_pattern = profile_settings.get("output_pattern", constants.DEFAULT_OUTPUT_PATTERN)
+
     img = Image.open(input_path)
 
     # Define valid modes and their required/optional arguments
@@ -30,8 +34,8 @@ def process_image(input_path, output_path, mode="border_size", **kwargs):
         raise ValueError(f"Invalid mode: {mode}. Supported modes are: {', '.join(mode_args.keys())}")
 
     # Filter arguments based on the mode
-    filtered_kwargs = filter_kwargs(
-        kwargs,
+    filtered_profile_settings = filter_profile_settings(
+        profile_settings,
         required_keys=mode_args[mode]["required"],
         optional_keys=mode_args[mode]["optional"]
     )
@@ -41,8 +45,8 @@ def process_image(input_path, output_path, mode="border_size", **kwargs):
 
     # Select mode
     if mode == "output_size":
-        target_size = filtered_kwargs["output_size"]
-        min_border = filtered_kwargs.get("min_border", constants.DEFAULT_MIN_BORDER)
+        target_size = filtered_profile_settings["output_size"]
+        min_border = filtered_profile_settings.get("min_border", constants.DEFAULT_MIN_BORDER)
 
         # Resize the image and calculate borders
         resized_img, new_size = resize_image(img, target_size, min_border)
@@ -51,10 +55,12 @@ def process_image(input_path, output_path, mode="border_size", **kwargs):
         # Update the image to the resized version
         img = resized_img
     elif mode == "border_size":
-        borders = calculate_borders_for_border_size(img, **filtered_kwargs)
+        borders = calculate_borders_for_border_size(img, **filtered_profile_settings)
 
     # Apply the border
-    img_with_border = apply_border(img, borders, tuple(kwargs.get("border_color", constants.DEFAULT_BORDER_COLOR)))
+    img_with_border = apply_border(img, borders, tuple(profile_settings.get("border_color", constants.DEFAULT_BORDER_COLOR)))
+
+    output_path = generate_output_path(input_path, output_pattern, overwrite)
 
     # Save the result
     img_with_border.save(output_path, format="JPEG", quality=95, subsampling=0)
@@ -175,11 +181,11 @@ def apply_border(img, borders, border_color):
     )
 
 
-def filter_kwargs(kwargs, required_keys=None, optional_keys=None, required=True):
+def filter_profile_settings(profile_settings, required_keys=None, optional_keys=None, required=True):
     """
     Filters a dictionary of keyword arguments, validating required and optional keys.
 
-    :param kwargs: Dictionary of keyword arguments to filter.
+    :param profile_settings: Dictionary of keyword arguments to filter.
     :param required_keys: List of keys that are required.
     :param optional_keys: List of keys that are optional.
     :param required: Whether to enforce the presence of required keys.
@@ -190,17 +196,17 @@ def filter_kwargs(kwargs, required_keys=None, optional_keys=None, required=True)
 
     # Check for missing required keys
     if required:
-        missing_keys = [key for key in required_keys if key not in kwargs]
+        missing_keys = [key for key in required_keys if key not in profile_settings]
         if missing_keys:
             raise ValueError(f"Missing required keys: {', '.join(missing_keys)}")
 
     # Filter and include only valid keys
-    filtered_kwargs = {
-        key: value for key, value in kwargs.items()
+    filtered_profile_settings = {
+        key: value for key, value in profile_settings.items()
         if key in required_keys or key in optional_keys
     }
 
-    return filtered_kwargs
+    return filtered_profile_settings
 
 
 def make_even(value):

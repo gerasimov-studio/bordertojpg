@@ -2,6 +2,7 @@ import argparse
 import os
 from settings_manager import SettingsManager
 from image_processor import process_image
+import constants
 
 
 def parse_arguments():
@@ -12,7 +13,6 @@ def parse_arguments():
     process_parser = subparsers.add_parser("process", help="Process an image.")
     process_parser.add_argument("input", help="Path to the input image.")
     process_parser.add_argument("--profile", help="Processing profile to use.")
-    process_parser.add_argument("--output", help="Path to save the processed image.")
 
     # Settings command
     settings_parser = subparsers.add_parser("settings", help="Manage settings and profiles.")
@@ -24,7 +24,6 @@ def parse_arguments():
 
 def process_command(args, settings_manager):
     input_path = args.input
-    output_path = args.output
     profile_name = args.profile or settings_manager.user_settings.get("active_profile")
 
     if not os.path.exists(input_path):
@@ -36,9 +35,11 @@ def process_command(args, settings_manager):
         print(f"Error: Profile '{profile_name}' not found.")
         return
 
-    output_path = output_path or f"{os.path.splitext(input_path)[0]}_processed.jpg"
-    process_image(input_path, output_path, **profile_settings)
-    print(f"Image processed and saved to '{output_path}' using profile '{profile_name}'.")
+    process_image(
+        input_path=input_path,
+        **profile_settings
+    )
+    print(f"Image processed and saved using profile '{profile_name}'.")
 
 
 def settings_command(args, settings_manager):

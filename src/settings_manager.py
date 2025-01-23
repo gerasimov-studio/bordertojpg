@@ -77,7 +77,7 @@ class SettingsManager:
         if not os.path.exists(self.user_config_path):
             self._save_json(self.user_config_path, {
                 "active_profile": constants.DEFAULT_PROFILE,
-                "supported_formats": constants.SUPPORTED_FORMATS
+                "max_workers": constants.DEFAULT_MAX_WORKERS
             })
 
         # Create default profile if not present

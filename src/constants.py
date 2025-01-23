@@ -4,6 +4,7 @@ VERSION = "0.1.0"
 SUPPORTED_FORMATS = ["jpg"]
 
 # Default settings for initial profile creation
+DEFAULT_MAX_WORKERS = 4
 DEFAULT_BORDER_COLOR = (255, 255, 255)  # White
 DEFAULT_PROFILE = "basic_profile"
 DEFAULT_MODE = "border_size"  # Can be "border_size" or "output_size"

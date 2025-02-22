@@ -12,7 +12,7 @@ class AppLogger:
 
     def __init__(self):
         # Get the base directory for logs using get_settings_directory()
-        self.logs_dir = os.path.join(get_settings_directory(), constants.LOGS_DIR_NAME)
+        self.logs_dir = str(os.path.join(get_settings_directory(), constants.LOGS_DIR_NAME))
         os.makedirs(self.logs_dir, exist_ok=True)  # Create logs directory if it doesn't exist
         self.log_file = os.path.join(self.logs_dir, "app.log")
         self._setup_logging()
